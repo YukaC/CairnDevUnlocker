@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>CairnDevUnlocker</AssemblyName>
+    <RootNamespace>CairnDevUnlocker</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>10.0</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Il2CppInterop para acceso a tipos IL2CPP -->
+    <PackageReference Include="Il2CppInterop.Runtime" Version="1.4.5" />
+    <PackageReference Include="Il2CppInterop.Common" Version="1.4.5" />
+  </ItemGroup>
+
+  <!-- Referencia a los DLLs dummy generados para tipos del juego -->
+  <ItemGroup>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\output\DummyDll\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>..\output\DummyDll\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TheGameBakers.TGBTools.DebugMenu.Runtime">
+      <HintPath>..\output\DummyDll\TheGameBakers.TGBTools.DebugMenu.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
