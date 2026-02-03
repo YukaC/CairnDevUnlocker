@@ -112,8 +112,9 @@ El mod crea `CairnDevUnlocker.log` en la carpeta del juego con información de d
 ## ⚠️ Notas
 
 - Este mod es para uso educacional y personal
-- Probado con la versión actual de Cairn
+- **Probado con**: Cairn v1.0 (Unity 6000.0.59)
 - Si el juego se actualiza, puede ser necesario regenerar los bindings
+- Build GUID: `c23cb37bc8cd4376a3c763f352519094`
 
 ## 📄 Licencia
 
