@@ -54,7 +54,7 @@ See [docs/TECHNICAL.md](docs/TECHNICAL.md) for more details.
 
 ## Compatibility
 
-- ✅ Cairn (Steam version, 2025)
+- ✅ Cairn (Steam version, 1.0.299s_1713)
 - ⚠️ May not work with future game updates
 
 ## License
