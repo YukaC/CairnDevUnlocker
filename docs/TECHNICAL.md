@@ -1,127 +1,80 @@
-# Documentación Técnica - Cairn Dev Unlocker
+# Cairn Dev Unlocker - Technical Documentation
 
-## Análisis del Juego
+## Overview
 
-### Información General
+This mod enables the hidden developer debug menu in Cairn by patching IL2CPP runtime memory.
 
-| Propiedad      | Valor  |
-| -------------- | ------ |
-| Motor          | Unity  |
-| Runtime        | IL2CPP |
-| Versión IL2CPP | 31     |
-| Arquitectura   | x64    |
+## How It Works
 
-### Archivos Clave
+### Injection Method
 
-- `GameAssembly.dll` - Código IL2CPP compilado (~92MB)
-- `global-metadata.dat` - Metadata para Il2CppDumper (~23MB)
+Uses [Unity Doorstop](https://github.com/NeighTools/UnityDoorstop) (winhttp.dll proxy) to load a .NET assembly before the game starts. The mod runs on a background thread and waits for the game's IL2CPP runtime to initialize.
 
-## Extracción de Metadata
+### Memory Patching
 
-Usamos Il2CppDumper v6.7.46:
+The mod locates and patches these fields:
 
-```powershell
-.\Il2CppDumper.exe "GameAssembly.dll" "global-metadata.dat" "output"
+| Class           | Field           | Offset  | Patch       |
+| --------------- | --------------- | ------- | ----------- |
+| `DebugMenuUI`   | `IsEnabled`     | `0x150` | `true` (1)  |
+| `DebugMenuData` | `startDisabled` | `0x19`  | `false` (0) |
+
+### Additional Features
+
+- **Time Freeze**: Calls `Time.set_timeScale(0)` via direct RVA call at `0x3ADABF0`
+- **Cursor Lock**: Uses Windows API (`ShowCursor`, `SetCursor`)
+
+## RVA Addresses (Cairn 1.0)
+
+These addresses are specific to the current game version and will need updating if the game updates:
+
+```
+FindObjectOfType:     0x3AD11E0
+Time.set_timeScale:   0x3ADABF0
 ```
 
-### Archivos Generados
+## Building
 
-| Archivo       | Descripción                          |
-| ------------- | ------------------------------------ |
-| `dump.cs`     | Todas las clases decompiladas (49MB) |
-| `DummyDll/`   | 143 DLLs stub para referencia        |
-| `script.json` | Metadata en formato JSON             |
-| `il2cpp.h`    | Headers C++                          |
+Requirements:
 
-## APIs Identificadas
+- .NET 6.0 SDK
+- Windows
 
-### DebugMenuUI
-
-```csharp
-// Namespace: TGBTools.DebugMenu
-// Assembly: TheGameBakers.TGBTools.DebugMenu.Runtime.dll
-
-public class DebugMenuUI : MonoBehaviour
-{
-    // Eventos
-    internal event Action OnOpening;
-    internal event Action OnOpened;
-    internal event Action OnClosing;
-    internal event Action OnClosed;
-
-    // Propiedades
-    public GameObject Canvas { get; }
-    internal bool IsEnabled { get; set; }  // RVA: 0x2B19D70
-    internal bool IsOpened { get; }        // RVA: 0x32520B0
-
-    // Métodos principales
-    internal void ToggleMenu();            // RVA: 0x3251890
-    private void Open();                   // RVA: 0x3250260
-    private void Close();                  // RVA: 0x324CA20
-}
+```bash
+cd src
+dotnet build -c Release -o ../release
 ```
 
-### Sistema de Comandos
+## Files Structure
 
-```csharp
-// Clase base para comandos de debug
-public abstract class DebugMenuCommand
-{
-    public virtual bool IsAvailable();
-    public virtual string GetDisplayName();
-    public abstract ExecuteResult OnExecute(bool shortcut);
-}
-
-// Tipos de comandos
-- DebugMenuCommandSimple    // Ejecución simple
-- DebugMenuCommandToggle    // Toggle on/off
-- DebugMenuCommandOptions   // Múltiples opciones
-- DebugMenuCommandParams    // Con parámetros
+```
+CairnDevUnlocker-GitHub/
+├── src/
+│   ├── CairnDevUnlocker.cs    # Main source code
+│   └── CairnDevUnlocker.csproj
+├── release/
+│   ├── CairnDevUnlocker.dll   # Compiled mod
+│   ├── doorstop_config.ini    # Doorstop configuration
+│   └── winhttp.dll            # Doorstop loader
+├── docs/
+│   └── TECHNICAL.md           # This file
+├── README.md
+└── LICENSE
 ```
 
-## Unity Doorstop
+## Troubleshooting
 
-### Funcionamiento
+### Debug menu doesn't open
 
-1. El juego carga `winhttp.dll` (sistema de Windows)
-2. Doorstop intercepta esta carga con un proxy DLL
-3. Lee `doorstop_config.ini` para obtener el DLL objetivo
-4. Inicia CoreCLR y ejecuta nuestro `Main()`
-5. Nuestro código corre en un thread separado
+- Make sure you're in-game (not main menu)
+- Wait 15+ seconds after loading a save
+- Press F1 first, then F8
 
-### Configuración
+### Game crashes on F3 (Time Freeze)
 
-```ini
-[General]
-enabled=true
-target_assembly=CairnDevUnlocker.dll
-redirect_output_log=true
+- The Time.set_timeScale RVA may have changed with a game update
+- Check the log file for error messages
 
-[Il2Cpp]
-coreclr_path=    # Auto-detectado de .NET instalado
-corlib_dir=      # Auto-detectado de .NET instalado
-```
+### Log Location
 
-## Limitaciones
-
-### IL2CPP vs Mono
-
-En juegos Mono, podemos acceder directamente a tipos del juego via reflexión. En IL2CPP:
-
-- El código C# está compilado a C++ nativo
-- Los tipos originales no existen en runtime
-- Se necesita Il2CppInterop para marshalling
-
-### Solución Actual
-
-El mod actual usa `GetAsyncKeyState` de Windows para detectar F1, y registra eventos. Para acceso completo a `DebugMenuUI.ToggleMenu()`, se necesitaría:
-
-1. Il2CppInterop.Runtime para interop
-2. Bindings generados del juego
-3. Llamadas via punteros nativos
-
-## Referencias
-
-- [Unity Doorstop](https://github.com/NeighTools/UnityDoorstop)
-- [Il2CppDumper](https://github.com/Perfare/Il2CppDumper)
-- [Il2CppInterop](https://github.com/BepInEx/Il2CppInterop)
+The mod creates `CairnDevUnlocker.log` in the game directory.
